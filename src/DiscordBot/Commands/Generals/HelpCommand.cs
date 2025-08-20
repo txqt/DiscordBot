@@ -4,7 +4,7 @@ using DiscordBot.Attributes;
 using DiscordBot.Services;
 using System.Text;
 
-namespace DiscordBot.Commands;
+namespace DiscordBot.Commands.Generals;
 
 [DiscordCommand("help", "Hiển thị danh sách các lệnh có sẵn")]
 public class HelpCommand : BaseCommand
@@ -25,7 +25,7 @@ public class HelpCommand : BaseCommand
 
         var embed = new EmbedBuilder()
             .WithTitle("📋 Danh sách lệnh")
-            .WithDescription($"Sử dụng: {_client.CurrentUser.Mention} <lệnh> [tham số]")
+            .WithDescription($"Sử dụng: {_client.CurrentUser.Mention} <lệnh> [tham số]\n\nGõ `@Bot help <lệnh>` để xem chi tiết từng lệnh.")
             .WithColor(Color.Blue)
             .WithTimestamp(DateTimeOffset.Now);
 
@@ -35,31 +35,28 @@ public class HelpCommand : BaseCommand
         foreach (var cmd in commands)
         {
             var permissions = GetPermissionText(cmd);
-            var commandText = $"`{cmd.Name}` - {cmd.Description}";
-
-            if (!string.IsNullOrEmpty(permissions))
-                commandText += $"\n   *Yêu cầu: {permissions}*";
-
-            // Check if user has permissions for this command
+            var commandLine = $"**{cmd.Name}** — {Truncate(cmd.Description, 80)}";
             if (HasUserPermission(guildUser, cmd))
             {
-                availableCommands.AppendLine(commandText);
+                availableCommands.AppendLine($"• {commandLine}");
+                if (!string.IsNullOrEmpty(permissions))
+                    availableCommands.AppendLine($"    _Yêu cầu: {permissions}_");
+                availableCommands.AppendLine();
             }
             else
             {
-                restrictedCommands.AppendLine(commandText);
+                restrictedCommands.AppendLine($"• {commandLine}");
+                if (!string.IsNullOrEmpty(permissions))
+                    restrictedCommands.AppendLine($"    _Yêu cầu: {permissions}_");
+                restrictedCommands.AppendLine();
             }
         }
 
         if (availableCommands.Length > 0)
-        {
             embed.AddField("✅ Lệnh có thể sử dụng", availableCommands.ToString(), false);
-        }
 
         if (restrictedCommands.Length > 0)
-        {
             embed.AddField("🔒 Lệnh bị hạn chế", restrictedCommands.ToString(), false);
-        }
 
         await ReplyAsync(message, embed.Build());
     }
@@ -69,14 +66,10 @@ public class HelpCommand : BaseCommand
         var permissions = new List<string>();
 
         foreach (var guildPerm in cmd.GuildPermissions)
-        {
             permissions.Add($"Guild: {guildPerm.Permission}");
-        }
 
         foreach (var channelPerm in cmd.ChannelPermissions)
-        {
             permissions.Add($"Channel: {channelPerm.Permission}");
-        }
 
         return string.Join(", ", permissions);
     }
@@ -86,16 +79,15 @@ public class HelpCommand : BaseCommand
         if (guildUser == null && (cmd.GuildPermissions.Any() || cmd.ChannelPermissions.Any()))
             return false;
 
-        // Check guild permissions
         foreach (var guildPerm in cmd.GuildPermissions)
         {
             if (guildUser != null && !guildUser.GuildPermissions.Has(guildPerm.Permission))
                 return false;
         }
 
-        // For channel permissions, we can't check specific channel here, so assume they have it
-        // The actual check will happen when they try to use the command
-
         return true;
     }
+
+    private static string Truncate(string s, int max)
+        => string.IsNullOrEmpty(s) ? s : (s.Length <= max ? s : s.Substring(0, max - 3) + "...");
 }

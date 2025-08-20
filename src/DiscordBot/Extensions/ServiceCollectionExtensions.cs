@@ -25,7 +25,11 @@ public static class ServiceCollectionExtensions
         // Configure and register Discord client
         var socketConfig = new DiscordSocketConfig
         {
-            GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent,
+            GatewayIntents = GatewayIntents.AllUnprivileged |
+                                GatewayIntents.MessageContent |
+                                GatewayIntents.Guilds |
+                             GatewayIntents.GuildMessages |
+                             GatewayIntents.GuildMembers,
             LogLevel = LogSeverity.Info
         };
         services.AddSingleton(socketConfig);

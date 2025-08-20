@@ -7,7 +7,7 @@ using Discord;
 using Discord.WebSocket;
 using DiscordBot.Attributes;
 
-namespace DiscordBot.Commands;
+namespace DiscordBot.Commands.Generals;
 
 [DiscordCommand("about", "Thông tin về bot")]
 public class AboutCommand : BaseCommand

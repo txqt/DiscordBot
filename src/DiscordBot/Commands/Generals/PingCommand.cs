@@ -2,7 +2,7 @@
 using Discord.WebSocket;
 using DiscordBot.Attributes;
 
-namespace DiscordBot.Commands;
+namespace DiscordBot.Commands.Generals;
 
 /// <summary>
 /// A simple command to check the bot's latency.

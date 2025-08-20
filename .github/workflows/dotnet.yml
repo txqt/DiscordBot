@@ -1,0 +1,45 @@
+name: .NET CI/CD
+
+on:
+  push:
+    branches: [ "main" ]   # chạy khi push lên nhánh main
+  pull_request:
+    branches: [ "main" ]   # chạy khi có PR vào nhánh main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Lấy code từ repo
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Cài .NET SDK (ví dụ .NET 9, bạn đổi version theo dự án)
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      # Restore packages
+      - name: Restore dependencies
+        run: dotnet restore src/DiscordBot
+
+      # Build project
+      - name: Build
+        run: dotnet build src/DiscordBot --configuration Release --no-restore
+
+      # Chạy test (nếu có project test riêng)
+      # - name: Test
+      #   run: dotnet test tests/DiscordBot.Tests --no-build --verbosity normal
+
+      # Publish ra thư mục artifacts
+      - name: Publish
+        run: dotnet publish src/DiscordBot -c Release -o artifacts/DiscordBot
+
+      # Upload artifact để tải về từ GitHub Actions
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: DiscordBot
+          path: artifacts/DiscordBot
