@@ -39,7 +39,7 @@ jobs:
 
       # Upload artifact để tải về từ GitHub Actions
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: DiscordBot
           path: artifacts/DiscordBot
