@@ -2,9 +2,9 @@ name: .NET CI/CD
 
 on:
   push:
-    branches: [ "main" ]   # chạy khi push lên nhánh main
+    branches: [ "master" ]   # chạy khi push lên nhánh main
   pull_request:
-    branches: [ "main" ]   # chạy khi có PR vào nhánh main
+    branches: [ "master" ]   # chạy khi có PR vào nhánh main
 
 jobs:
   build:
