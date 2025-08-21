@@ -18,12 +18,6 @@ public class LockModule : InteractionModuleBase<SocketInteractionContext>
         var channel = (SocketTextChannel)Context.Channel;
         var everyone = channel.Guild.EveryoneRole;
 
-        if (!((SocketGuildUser)Context.User).GuildPermissions.ManageChannels)
-        {
-            await RespondAsync("Bạn không có quyền khóa channel!", ephemeral: true);
-            return;
-        }
-
         await channel.AddPermissionOverwriteAsync(everyone, new OverwritePermissions(sendMessages: PermValue.Deny));
         await RespondAsync("Channel đã bị khóa 🔒");
     }
@@ -35,12 +29,6 @@ public class LockModule : InteractionModuleBase<SocketInteractionContext>
     {
         var channel = (SocketTextChannel)Context.Channel;
         var everyone = channel.Guild.EveryoneRole;
-
-        if (!((SocketGuildUser)Context.User).GuildPermissions.ManageChannels)
-        {
-            await RespondAsync("Bạn không có quyền mở khóa channel!", ephemeral: true);
-            return;
-        }
 
         await channel.AddPermissionOverwriteAsync(everyone, new OverwritePermissions(sendMessages: PermValue.Allow));
         await RespondAsync("Channel đã được mở khóa 🔓");
