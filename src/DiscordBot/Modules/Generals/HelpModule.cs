@@ -78,12 +78,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             embed.AddField("❌ Không có lệnh nào", "Hiện tại không có lệnh nào được đăng ký.", false);
         }
 
-        var components = new ComponentBuilder()
-            .WithButton("🔄 Refresh", "help_refresh", ButtonStyle.Secondary)
-            .WithButton("ℹ️ Bot Info", "bot_info", ButtonStyle.Primary)
-            .Build();
-
-        await RespondAsync(embed: embed.Build(), components: components);
+        await RespondAsync(embed: embed.Build());
     }
 
     private async Task ShowSpecificCommand(string commandName)
