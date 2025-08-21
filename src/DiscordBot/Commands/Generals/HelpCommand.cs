@@ -20,7 +20,7 @@ public class HelpCommand : BaseCommand
 
     public override async Task ExecuteAsync(SocketMessage message, string[] args)
     {
-        var commands = _commandRegistry.GetAllCommands().OrderBy(c => c.Name);
+        var commands = _commandRegistry.GetAllCommands().OrderBy(c => c.Name).ToList();
         var guildUser = message.Author as SocketGuildUser;
 
         var embed = new EmbedBuilder()
@@ -30,35 +30,57 @@ public class HelpCommand : BaseCommand
             .WithTimestamp(DateTimeOffset.Now);
 
         var availableCommands = new StringBuilder();
-        var restrictedCommands = new StringBuilder();
+        var restricted = new List<Models.CommandInfo>();
 
+        // Phân loại: có thể dùng / bị hạn chế
         foreach (var cmd in commands)
         {
-            var permissions = GetPermissionText(cmd);
-            var commandLine = $"**{cmd.Name}** — {Truncate(cmd.Description, 80)}";
             if (HasUserPermission(guildUser, cmd))
-            {
-                availableCommands.AppendLine($"• {commandLine}");
-                if (!string.IsNullOrEmpty(permissions))
-                    availableCommands.AppendLine($"    _Yêu cầu: {permissions}_");
-                availableCommands.AppendLine();
-            }
+                AppendCommandLine(availableCommands, cmd);
             else
-            {
-                restrictedCommands.AppendLine($"• {commandLine}");
-                if (!string.IsNullOrEmpty(permissions))
-                    restrictedCommands.AppendLine($"    _Yêu cầu: {permissions}_");
-                restrictedCommands.AppendLine();
-            }
+                restricted.Add(cmd);
         }
 
+        // Thêm phần lệnh có thể dùng
         if (availableCommands.Length > 0)
             embed.AddField("✅ Lệnh có thể sử dụng", availableCommands.ToString(), false);
 
-        if (restrictedCommands.Length > 0)
-            embed.AddField("🔒 Lệnh bị hạn chế", restrictedCommands.ToString(), false);
+        // Gộp các lệnh bị hạn chế theo chuỗi yêu cầu (ví dụ "Guild: BanMembers, Channel: ManageMessages")
+        if (restricted.Any())
+        {
+            // Nhóm theo permission text (cùng 1 tập quyền sẽ cùng nhóm)
+            var grouped = restricted
+                .GroupBy(c => GetPermissionText(c))
+                .OrderBy(g => string.IsNullOrEmpty(g.Key) ? "0" : g.Key);
+
+            foreach (var group in grouped)
+            {
+                var sb = new StringBuilder();
+                foreach (var cmd in group.OrderBy(c => c.Name))
+                {
+                    sb.AppendLine($"• **{cmd.Name}** — {Truncate(cmd.Description, 80)}");
+                }
+
+                var header = string.IsNullOrEmpty(group.Key) ? "🔒 Lệnh bị hạn chế" : $"🔒 Lệnh bị hạn chế — _Yêu cầu: {group.Key}_";
+                // Nếu nội dung quá dài cho field, cắt bớt để tránh lỗi (Discord embed field giới hạn)
+                var content = sb.ToString();
+                if (content.Length > 950) // chút đệm so với giới hạn 1024
+                    content = content.Substring(0, 947) + "...";
+
+                embed.AddField(header, content, false);
+            }
+        }
 
         await ReplyAsync(message, embed.Build());
+    }
+
+    private void AppendCommandLine(StringBuilder sb, Models.CommandInfo cmd)
+    {
+        var permissions = GetPermissionText(cmd);
+        sb.AppendLine($"• **{cmd.Name}** — {Truncate(cmd.Description, 80)}");
+        if (!string.IsNullOrEmpty(permissions))
+            sb.AppendLine($"    _Yêu cầu: {permissions}_");
+        sb.AppendLine();
     }
 
     private string GetPermissionText(Models.CommandInfo cmd)
@@ -76,7 +98,7 @@ public class HelpCommand : BaseCommand
 
     private bool HasUserPermission(SocketGuildUser? guildUser, Models.CommandInfo cmd)
     {
-        if (guildUser == null && (cmd.GuildPermissions.Any() || cmd.ChannelPermissions.Any()))
+        if ((cmd.GuildPermissions.Any() || cmd.ChannelPermissions.Any()) && guildUser == null)
             return false;
 
         foreach (var guildPerm in cmd.GuildPermissions)
@@ -85,6 +107,7 @@ public class HelpCommand : BaseCommand
                 return false;
         }
 
+        // Nếu bạn có logic kiểm tra quyền kênh (channel) ở đâu khác, có thể bổ sung ở đây.
         return true;
     }
 
