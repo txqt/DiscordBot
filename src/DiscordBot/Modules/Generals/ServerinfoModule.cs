@@ -1,23 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Discord;
+﻿using Discord;
+using Discord.Interactions;
 using Discord.WebSocket;
-using DiscordBot.Attributes;
+using System.Threading.Tasks;
 
-namespace DiscordBot.Commands.Generals;
+namespace DiscordBot.Modules.Generals;
 
-[DiscordCommand("serverinfo", "Xem thông tin server hiện tại")]
-public class ServerinfoCommand : BaseCommand
+public class ServerinfoModule : InteractionModuleBase<SocketInteractionContext>
 {
-    public override async Task ExecuteAsync(SocketMessage message, string[] arg)
+    [SlashCommand("serverinfo", "Xem thông tin server hiện tại")]
+    public async Task ServerInfoAsync()
     {
-        var guild = (message.Channel as SocketGuildChannel)?.Guild;
+        var guild = Context.Guild;
         if (guild == null)
         {
-            await message.Channel.SendMessageAsync("Lệnh này chỉ dùng trong server.");
+            await RespondAsync("❌ Lệnh này chỉ dùng trong server.", ephemeral: true);
             return;
         }
 
@@ -38,6 +34,7 @@ public class ServerinfoCommand : BaseCommand
             .WithColor(Color.Blue)
             .Build();
 
-        await message.Channel.SendMessageAsync(embed: embed);
+        await RespondAsync(embed: embed);
     }
+
 }

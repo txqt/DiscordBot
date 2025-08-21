@@ -1,6 +1,6 @@
 ﻿using Discord;
-using Discord.Commands;
 using Discord.WebSocket;
+using Discord.Interactions;
 using DiscordBot.Models;
 using DiscordBot.Services;
 using Microsoft.Extensions.Configuration;
@@ -32,9 +32,14 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(socketConfig);
         services.AddSingleton<DiscordSocketClient>();
 
+        // Add InteractionService (quan trọng cho slash commands)
+        services.AddSingleton(x =>
+        {
+            var client = x.GetRequiredService<DiscordSocketClient>();
+            return new InteractionService(client);
+        });
+
         // Core bot services
-        services.AddSingleton<CommandRegistryService>();
-        services.AddSingleton<CommandHandlerService>();
         services.AddSingleton<DiscordBotService>();
 
         return services;

@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using Discord.Interactions;
 using DiscordBot.Models;
 using Microsoft.Extensions.Logging;
 
@@ -11,25 +12,28 @@ namespace DiscordBot.Services;
 public class DiscordBotService
 {
     private readonly DiscordSocketClient _client;
-    private readonly CommandHandlerService _commandHandler;
+    private readonly InteractionService _interactionService;
+    private readonly IServiceProvider _services;
     private readonly BotConfig _config;
     private readonly ILogger<DiscordBotService> _logger;
 
     public DiscordBotService(
         DiscordSocketClient client,
-        CommandHandlerService commandHandler,
+        InteractionService interactionService,
+        IServiceProvider services,
         BotConfig config,
         ILogger<DiscordBotService> logger)
     {
         _client = client;
-        _commandHandler = commandHandler;
+        _interactionService = interactionService;
+        _services = services;
         _config = config;
         _logger = logger;
 
         // Subscribe to Discord events
         _client.Log += LogAsync;
         _client.Ready += ReadyAsync;
-        _client.MessageReceived += _commandHandler.HandleMessageAsync;
+        _client.InteractionCreated += HandleInteractionAsync;
     }
 
     /// <summary>
@@ -43,8 +47,12 @@ public class DiscordBotService
             return;
         }
 
+        // Login & connect
         await _client.LoginAsync(TokenType.Bot, _config.Token);
         await _client.StartAsync();
+
+        // Load slash command modules
+        await _interactionService.AddModulesAsync(typeof(Program).Assembly, _services);
     }
 
     /// <summary>
@@ -79,9 +87,40 @@ public class DiscordBotService
     /// <summary>
     /// Called when the bot has successfully connected and is ready.
     /// </summary>
-    private Task ReadyAsync()
+    private async Task ReadyAsync()
     {
         _logger.LogInformation("Bot {Username} is connected and ready!", _client.CurrentUser.Username);
-        return Task.CompletedTask;
+
+        if (_config.GuildId.HasValue)
+        {
+            await _interactionService.RegisterCommandsToGuildAsync(_config.GuildId.Value);
+            _logger.LogInformation("Slash commands registered to guild {GuildId}", _config.GuildId.Value);
+        }
+        else
+        {
+            await _interactionService.RegisterCommandsGloballyAsync();
+            _logger.LogInformation("Slash commands registered globally");
+        }
+    }
+
+
+    /// <summary>
+    /// Handle slash command execution
+    /// </summary>
+    private async Task HandleInteractionAsync(SocketInteraction interaction)
+    {
+        try
+        {
+            var ctx = new SocketInteractionContext(_client, interaction);
+            await _interactionService.ExecuteCommandAsync(ctx, _services);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error handling interaction");
+
+            if (interaction.Type == InteractionType.ApplicationCommand)
+                await interaction.GetOriginalResponseAsync()
+                    .ContinueWith(async msg => await (await msg).DeleteAsync());
+        }
     }
 }
