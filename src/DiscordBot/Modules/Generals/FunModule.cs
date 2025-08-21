@@ -82,4 +82,12 @@ public class FunModule : InteractionModuleBase<SocketInteractionContext>
 
         await RespondAsync($"😂 {joke}");
     }
+
+    [SlashCommand("say", "Bot sẽ nói lại nội dung bạn nhập")]
+    public async Task SayCommand(
+    [Summary("text", "Nội dung bot sẽ gửi")] string text)
+    {
+        await RespondAsync(text);
+    }
+
 }
